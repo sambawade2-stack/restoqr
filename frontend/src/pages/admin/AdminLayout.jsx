@@ -34,7 +34,7 @@ function SubscriptionBanner({ subscription }) {
         <span>
           <span className="font-semibold">Période d'essai :</span>{' '}
           {days_left === 0
-            ? 'expire aujourd'hui !'
+            ? "expire aujourd'hui !"
             : `expire dans ${days_left} jour${days_left > 1 ? 's' : ''}.`}
           {' '}Contactez-nous pour activer votre abonnement.
         </span>
