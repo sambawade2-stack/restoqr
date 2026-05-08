@@ -26,7 +26,8 @@ class MenuController extends Controller
             ->where('restaurant_id', $restaurant->id)
             ->firstOrFail();
 
-        $token = $request->query('token', '');
+        // Accepte le token via header (privilégié) ou query param (rétrocompat QR codes existants)
+        $token = $request->header('X-QR-Token') ?? $request->query('token', '');
 
         if (!$table->isTokenValid($token)) {
             return response()->json(['message' => 'QR code invalide ou expiré.'], 403);

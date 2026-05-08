@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { UtensilsCrossed, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { login } from '../api/auth'
@@ -21,9 +21,10 @@ export default function LoginPage() {
       toast.success(`Bonjour, ${data.user.name} !`)
 
       const role = data.user.role
-      if      (role === 'kitchen') navigate('/kitchen')
-      else if (role === 'cashier') navigate('/cashier')
-      else                         navigate('/admin')
+      if      (role === 'super_admin' || role === 'platform_viewer') navigate('/platform')
+      else if (role === 'kitchen')  navigate('/kitchen')
+      else if (role === 'cashier')  navigate('/cashier')
+      else                          navigate('/admin')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Identifiants incorrects.')
     } finally {
@@ -96,7 +97,14 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Pas encore de compte ?{' '}
+          <Link to="/register" className="text-primary-500 font-semibold hover:underline">
+            Créer votre restaurant
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-gray-400 mt-3">
           © {new Date().getFullYear()} RestoQR — Tous droits réservés
         </p>
       </div>

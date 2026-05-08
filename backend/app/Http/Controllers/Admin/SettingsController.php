@@ -42,7 +42,7 @@ class SettingsController extends Controller
             'currency'         => ['sometimes', 'string', 'max:10'],
             'timezone'         => ['sometimes', 'string', 'max:50'],
             'shift_start_hour' => ['sometimes', 'integer', 'min:0', 'max:23'],
-            'logo'             => ['sometimes', 'nullable', 'image', 'max:2048'],
+            'logo'             => ['sometimes', 'nullable', 'file', 'max:2048', 'mimes:jpeg,jpg,png,webp'],
         ]);
 
         DB::transaction(function () use ($restaurant, $validated, $request) {
@@ -86,14 +86,12 @@ class SettingsController extends Controller
     /** GET /api/admin/orders/history?date=2026-03-23 */
     public function orderHistory(Request $request): JsonResponse
     {
-        $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
+        $validated = $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
 
         $restaurantId = $request->user()->restaurant_id;
         $restaurant   = $request->user()->restaurant;
-        [$dayStart, $dayEnd] = $restaurant->businessDayBounds();
 
-        // Si une date est fournie, on prend minuit→minuit de cette date
-        $date  = $request->query('date');
+        $date  = $validated['date'];
         $start = \Carbon\Carbon::parse($date, $restaurant->timezone ?? 'Africa/Dakar')->startOfDay();
         $end   = $start->copy()->endOfDay();
 

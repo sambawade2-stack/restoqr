@@ -1,4 +1,5 @@
 import axios from 'axios'
+import toast from 'react-hot-toast'
 
 const api = axios.create({
   baseURL: '/api',
@@ -22,17 +23,36 @@ function fixStorageUrls(data) {
   return JSON.parse(fixed)
 }
 
-// Handle 401 — redirect to login
+// Handle 401 (session expirée) et 403 SaaS (restaurant suspendu / abo expiré)
 api.interceptors.response.use(
   res => {
     if (res.data) res.data = fixStorageUrls(res.data)
     return res
   },
   err => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const code   = err.response?.data?.code
+
+    if (status === 401) {
       localStorage.removeItem('token')
       window.location.href = '/login'
+      return Promise.reject(err)
     }
+
+    if (status === 403) {
+      if (code === 'subscription_expired') {
+        toast.error('Abonnement expiré — contactez le support pour renouveler.', {
+          id: 'subscription_expired',
+          duration: 6000,
+        })
+      } else if (code === 'restaurant_suspended') {
+        toast.error('Votre restaurant est suspendu. Contactez le support.', {
+          id: 'restaurant_suspended',
+          duration: 6000,
+        })
+      }
+    }
+
     return Promise.reject(err)
   }
 )

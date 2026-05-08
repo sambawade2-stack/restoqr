@@ -1,13 +1,50 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UtensilsCrossed, TableProperties,
-  ClipboardList, BarChart3, Users, LogOut, KeyRound, Menu, X, Settings, History
+  ClipboardList, BarChart3, Users, LogOut, KeyRound, Menu, X, Settings, History,
+  AlertTriangle
 } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
 import { logout } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
 import ChangePasswordModal from '../../components/common/ChangePasswordModal'
+
+function SubscriptionBanner({ subscription }) {
+  if (!subscription) return null
+
+  const { status, is_active, days_left, expires_at } = subscription
+
+  // Abonnement expiré
+  if (!is_active) {
+    return (
+      <div className="bg-red-600 text-white text-sm px-4 py-2.5 flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+        <span className="font-semibold">Abonnement expiré.</span>
+        <span>Contactez le support pour renouveler votre accès.</span>
+      </div>
+    )
+  }
+
+  // Trial expirant dans ≤ 7 jours
+  if (status === 'trial' && days_left !== null && days_left <= 7) {
+    return (
+      <div className="bg-amber-500 text-white text-sm px-4 py-2.5 flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+        <span>
+          <span className="font-semibold">Période d'essai :</span>{' '}
+          {days_left === 0
+            ? 'expire aujourd'hui !'
+            : `expire dans ${days_left} jour${days_left > 1 ? 's' : ''}.`}
+          {' '}Contactez-nous pour activer votre abonnement.
+        </span>
+      </div>
+    )
+  }
+
+  // Trial > 7 jours restants — discret dans la sidebar uniquement (pas de bannière)
+  return null
+}
 
 const NAV_ITEMS = [
   { to: '/admin',           label: 'Tableau de Bord',  icon: LayoutDashboard, end: true },
@@ -22,6 +59,7 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const { user, clearAuth } = useAuthStore()
+  const subscription = user?.restaurant?.subscription ?? null
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [pwdModal, setPwdModal]       = useState(false)
@@ -64,6 +102,15 @@ export default function AdminLayout() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Badge trial discret */}
+      {subscription?.status === 'trial' && subscription?.days_left > 7 && (
+        <div className="mx-3 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+          <p className="text-xs text-amber-700 font-medium">
+            Essai gratuit · {subscription.days_left}j restants
+          </p>
+        </div>
+      )}
 
       {/* User */}
       <div className="px-3 py-4 border-t border-gray-100">
@@ -114,6 +161,8 @@ export default function AdminLayout() {
           </button>
           <span className="font-bold text-gray-900">RestoQR</span>
         </div>
+
+        <SubscriptionBanner subscription={subscription} />
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />

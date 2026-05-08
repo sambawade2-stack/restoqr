@@ -20,7 +20,8 @@ class DashboardController extends Controller
         [$dayStart, $dayEnd] = $restaurant->businessDayBounds();
 
         // Cache 60s — les stats "actives" changent vite, inutile de dépasser 1min
-        $cacheKey = "stats:{$restaurantId}:{$dayStart->timestamp}";
+        // Clé stable (pas de timestamp) pour que invalidateCache() fonctionne avec Redis
+        $cacheKey = "stats:{$restaurantId}";
         return Cache::remember($cacheKey, 60, function () use ($restaurantId, $restaurant, $dayStart, $dayEnd) {
             return $this->buildStats($restaurantId, $restaurant, $dayStart, $dayEnd);
         });
@@ -106,6 +107,6 @@ class DashboardController extends Controller
     /** Invalide le cache stats dès qu'une commande change */
     public static function invalidateCache(int $restaurantId): void
     {
-        Cache::forget("stats:{$restaurantId}:*");
+        Cache::forget("stats:{$restaurantId}");
     }
 }

@@ -26,7 +26,21 @@ class Subscription extends Model
 
     public function isActive(): bool
     {
-        return $this->status === 'active' &&
+        // 'active' = abonnement payé ; 'trial' = période d'essai
+        // Dans les deux cas, expires_at null = permanent, sinon doit être futur
+        return in_array($this->status, ['active', 'trial']) &&
                ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
+    public function isExpired(): bool
+    {
+        return in_array($this->status, ['expired', 'cancelled']) ||
+               ($this->expires_at !== null && $this->expires_at->isPast());
+    }
+
+    public function daysUntilExpiry(): ?int
+    {
+        if ($this->expires_at === null) return null;
+        return max(0, (int) now()->diffInDays($this->expires_at, false));
     }
 }

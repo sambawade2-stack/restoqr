@@ -88,4 +88,12 @@ class Restaurant extends Model
     {
         return $query->where('is_active', true);
     }
+
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
+    public function getOrderQrUrlAttribute(): string
+    {
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        return "{$frontendUrl}/order/{$this->slug}";
+    }
 }

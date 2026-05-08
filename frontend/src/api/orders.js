@@ -2,7 +2,7 @@ import api from './axios'
 
 // Public
 export const placeTableOrder    = (slug, tableId, token, data) =>
-  api.post(`/menu/${slug}/${tableId}/order`, data, { params: { token } })
+  api.post(`/menu/${slug}/${tableId}/order`, data, { headers: { 'X-QR-Token': token } })
 
 export const placeDeliveryOrder = (slug, data) =>
   api.post(`/orders/${slug}`, data)

@@ -40,14 +40,14 @@ class KitchenController extends Controller
      */
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => ['required', 'in:accepted,preparing,ready,served'],
         ]);
 
         // Ensure order belongs to this restaurant
         abort_if($order->restaurant_id !== $request->user()->restaurant_id, 403);
 
-        $order = $this->orderService->transitionStatus($order, $request->status);
+        $order = $this->orderService->transitionStatus($order, $validated['status']);
 
         return response()->json(new OrderResource($order));
     }

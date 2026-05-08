@@ -86,16 +86,18 @@ class OrderService
     }
 
     /**
-     * Generate unique order number: ORD-{restaurantId}-{YYYYMMDD}-{seq}
+     * Generate unique order number: ORD-{shortHash}-{YYYYMMDD}-{seq}
+     * Le hash est dérivé de restaurant_id mais n'est pas réversible.
      */
     private function generateOrderNumber(int $restaurantId): string
     {
-        $date  = now()->format('Ymd');
-        $count = Order::where('restaurant_id', $restaurantId)
+        $date      = now()->format('Ymd');
+        $shortHash = strtoupper(substr(hash('sha256', 'resto-' . $restaurantId), 0, 4));
+        $count     = Order::where('restaurant_id', $restaurantId)
             ->whereDate('created_at', today())
             ->count() + 1;
 
-        return sprintf('ORD-%d-%s-%03d', $restaurantId, $date, $count);
+        return sprintf('ORD-%s-%s-%04d', $shortHash, $date, $count);
     }
 
     /**

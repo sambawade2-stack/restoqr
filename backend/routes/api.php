@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Cashier;
 use App\Http\Controllers\Client;
 use App\Http\Controllers\Kitchen;
+use App\Http\Controllers\Platform\PlatformController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -40,7 +41,10 @@ Route::get('/health', function () {
 });
 
 // ── Public: Auth ──────────────────────────────────────────────────────────────
-Route::post('/auth/login',  [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/auth/login',    [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/auth/register', [\App\Http\Controllers\Auth\RegisterController::class, 'register'])->middleware('throttle:5,1');
+// Prix public pour la page d'inscription
+Route::get('/platform/pricing', [PlatformController::class, 'getSettings']);
 
 // ── Public: Client Menu & Orders ──────────────────────────────────────────────
 Route::prefix('menu/{slug}')->group(function () {
@@ -54,18 +58,46 @@ Route::prefix('menu/{slug}')->group(function () {
 
 // Delivery/takeaway order
 Route::post('/orders/{slug}', [Client\OrderController::class, 'storeDelivery'])->middleware('throttle:30,1');
-// Track order
-Route::get('/orders/{orderNumber}/track', [Client\OrderController::class, 'track']);
+// Track order — throttle strict (5/min) pour éviter l'énumération de commandes
+Route::get('/orders/{orderNumber}/track', [Client\OrderController::class, 'track'])->middleware('throttle:5,1');
 
-// ── Authenticated routes ───────────────────────────────────────────────────────
+// ── Auth routes — sanctum uniquement (pas de vérif subscription) ──────────────
+// Nécessaire pour que logout/me/password fonctionnent même avec abo expiré
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout',    [AuthController::class, 'logout']);
+    Route::get('/auth/me',         [AuthController::class, 'me']);
+    Route::patch('/auth/password', [AuthController::class, 'changePassword']);
+});
+
+// ── Authenticated routes (sanctum + restaurant actif + abo valide) ─────────────
 Route::middleware(['auth:sanctum', 'restaurant.active'])->group(function () {
 
-    Route::post('/auth/logout',           [AuthController::class, 'logout']);
-    Route::get('/auth/me',                [AuthController::class, 'me']);
-    Route::patch('/auth/password',        [AuthController::class, 'changePassword']);
+    // ── Platform — lecture (super_admin + platform_viewer) ────────────────
+    Route::middleware('role:super_admin,platform_viewer')
+        ->prefix('platform')
+        ->group(function () {
+            Route::get('/stats',       [PlatformController::class, 'stats']);
+            Route::get('/restaurants', [PlatformController::class, 'restaurants']);
+            Route::get('/settings',    [PlatformController::class, 'getSettings']);
+        });
+
+    // ── Platform — écriture (super_admin ONLY) ─────────────────────────
+    Route::middleware('role:super_admin')
+        ->prefix('platform')
+        ->group(function () {
+            Route::post('/restaurants',                             [PlatformController::class, 'createRestaurant']);
+            Route::patch('/restaurants/{restaurant}/status',        [PlatformController::class, 'toggleStatus']);
+            Route::patch('/restaurants/{restaurant}/subscription',  [PlatformController::class, 'updateSubscription']);
+            Route::delete('/restaurants/{restaurant}',              [PlatformController::class, 'destroyRestaurant']);
+            Route::post('/settings',                                [PlatformController::class, 'updateSettings']);
+            // Gestion des platform_viewers
+            Route::get('/viewers',         [PlatformController::class, 'listViewers']);
+            Route::post('/viewers',        [PlatformController::class, 'createViewer']);
+            Route::delete('/viewers/{id}', [PlatformController::class, 'deleteViewer']);
+        });
 
     // ── Kitchen ───────────────────────────────────────────────────────────
-    Route::middleware('role:kitchen,admin')
+    Route::middleware('role:kitchen,admin,super_admin')
         ->prefix('kitchen')
         ->group(function () {
             Route::get('/orders',                                    [Kitchen\KitchenController::class, 'index']);
@@ -74,7 +106,7 @@ Route::middleware(['auth:sanctum', 'restaurant.active'])->group(function () {
         });
 
     // ── Cashier (cashier + admin) ─────────────────────────────────────────
-    Route::middleware('role:cashier,admin')
+    Route::middleware('role:cashier,admin,super_admin')
         ->prefix('cashier')
         ->group(function () {
             // Stats
@@ -97,7 +129,7 @@ Route::middleware(['auth:sanctum', 'restaurant.active'])->group(function () {
         });
 
     // ── Admin ──────────────────────────────────────────────────────────────
-    Route::middleware('role:admin')
+    Route::middleware('role:admin,super_admin')
         ->prefix('admin')
         ->group(function () {
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\TrackOrderResource;
 use App\Models\Restaurant;
 use App\Models\Table;
 use App\Services\OrderService;
@@ -27,8 +28,9 @@ class OrderController extends Controller
             ->where('restaurant_id', $restaurant->id)
             ->firstOrFail();
 
-        // Re-verify token on order submission
-        if (!$table->isTokenValid($request->query('token', ''))) {
+        // Re-verify token on order submission (header privilégié, query param en fallback)
+        $token = $request->header('X-QR-Token') ?? $request->query('token', '');
+        if (!$table->isTokenValid($token)) {
             return response()->json(['message' => 'QR code invalide.'], 403);
         }
 
@@ -54,14 +56,20 @@ class OrderController extends Controller
 
     /**
      * GET /api/orders/{orderNumber}/track
-     * Client tracks their order status (public, by order number).
+     * Suivi public de commande — retourne UNIQUEMENT le statut et les articles.
+     * Aucune donnée personnelle (téléphone, adresse, nom) n'est exposée.
      */
     public function track(string $orderNumber): JsonResponse
     {
+        // Valider le format du numéro pour éviter les requêtes DB inutiles
+        if (!preg_match('/^ORD-[A-F0-9]{4}-\d{8}-\d{4}$/', $orderNumber)) {
+            return response()->json(['message' => 'Commande introuvable.'], 404);
+        }
+
         $order = \App\Models\Order::where('order_number', $orderNumber)
             ->with(['items.product', 'table'])
             ->firstOrFail();
 
-        return response()->json(new OrderResource($order));
+        return response()->json(new TrackOrderResource($order));
     }
 }

@@ -8,9 +8,11 @@ const MenuPage     = lazy(() => import('./pages/client/MenuPage'))
 const DeliveryPage = lazy(() => import('./pages/client/DeliveryPage'))
 const TrackOrder   = lazy(() => import('./pages/client/TrackOrder'))
 const LoginPage    = lazy(() => import('./pages/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 
 const KitchenDashboard  = lazy(() => import('./pages/kitchen/KitchenDashboard'))
 const CashierDashboard  = lazy(() => import('./pages/cashier/CashierDashboard'))
+const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'))
 
 const AdminLayout      = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard   = lazy(() => import('./pages/admin/Dashboard'))
@@ -48,7 +50,15 @@ export default function App() {
         <Route path="/track/:orderNumber"  element={<TrackOrder />} />
 
         {/* ── Auth ───────────────────────────────────────────────────────── */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login"    element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* ── Platform (Super Admin) ─────────────────────────────────────── */}
+        <Route path="/platform" element={
+          <PrivateRoute roles={['super_admin', 'platform_viewer']}>
+            <PlatformDashboard />
+          </PrivateRoute>
+        } />
 
         {/* ── Kitchen ────────────────────────────────────────────────────── */}
         <Route path="/kitchen" element={

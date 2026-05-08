@@ -47,6 +47,7 @@ export default defineConfig({
           ],
           'pages-kitchen': ['./src/pages/kitchen/KitchenDashboard'],
           'pages-cashier': ['./src/pages/cashier/CashierDashboard'],
+          'pages-platform': ['./src/pages/platform/PlatformDashboard'],
           'pages-admin':   [
             './src/pages/admin/AdminLayout',
             './src/pages/admin/Dashboard',

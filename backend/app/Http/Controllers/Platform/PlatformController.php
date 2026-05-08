@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlatformSetting;
 use App\Models\Restaurant;
 use App\Models\Subscription;
 use App\Models\User;
@@ -25,28 +26,52 @@ class PlatformController extends Controller
         $active    = Restaurant::where('is_active', true)->count();
         $suspended = Restaurant::where('is_active', false)->count();
 
-        $expiringSoon = Subscription::where('status', 'active')
+        // Expire dans ≤ 7 jours (actif ou trial)
+        $expiringSoon = Subscription::whereIn('status', ['active', 'trial'])
             ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now()->addDays(7))
+            ->whereBetween('expires_at', [now(), now()->addDays(7)])
             ->count();
 
-        $expired = Subscription::where('status', 'active')
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<', now())
-            ->count();
+        // Expiré = statut expired/cancelled OU expires_at passé
+        $expired = Subscription::where(function ($q) {
+                $q->whereIn('status', ['expired', 'cancelled'])
+                  ->orWhere(function ($q2) {
+                      $q2->whereNotNull('expires_at')
+                         ->where('expires_at', '<', now());
+                  });
+            })->count();
 
-        // New this month
         $newThisMonth = Restaurant::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
+        // Revenus
+        $activeSubsCount = Subscription::where('status', 'active')->count();
+        $trialCount      = Subscription::where('status', 'trial')->count();
+        $price           = (float) PlatformSetting::get('subscription_price', 0);
+        $currency        = (string) PlatformSetting::get('subscription_currency', 'FCFA');
+
+        // MRR = abonnements actifs × prix mensuel
+        $mrr = $activeSubsCount * $price;
+
+        // Revenus ce mois = nouveaux actifs ce mois × prix
+        $newActivesThisMonth = Subscription::where('status', 'active')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+        $revenueThisMonth = $newActivesThisMonth * $price;
+
         return response()->json([
-            'total'         => $total,
-            'active'        => $active,
-            'suspended'     => $suspended,
-            'expiring_soon' => $expiringSoon,
-            'expired'       => $expired,
-            'new_this_month'=> $newThisMonth,
+            'total'               => $total,
+            'active'              => $active,
+            'suspended'           => $suspended,
+            'expiring_soon'       => $expiringSoon,
+            'expired'             => $expired,
+            'new_this_month'      => $newThisMonth,
+            'trial'               => $trialCount,
+            'mrr'                 => $mrr,
+            'revenue_this_month'  => $revenueThisMonth,
+            'currency'            => $currency,
         ]);
     }
 
@@ -98,7 +123,6 @@ class PlatformController extends Controller
             'address'        => ['nullable', 'string', 'max:300'],
             'currency'       => ['nullable', 'string', 'max:10'],
             'timezone'       => ['nullable', 'string', 'max:50'],
-            'plan'           => ['required', 'in:free,basic,pro'],
             'admin_name'     => ['required', 'string', 'max:100'],
             'admin_email'    => ['required', 'email', 'unique:users,email'],
             'admin_password' => ['required', 'string', 'min:8'],
@@ -116,21 +140,16 @@ class PlatformController extends Controller
                 'is_active' => true,
             ]);
 
-            // Create subscription
-            $duration = match ($validated['plan']) {
-                'free'  => null,
-                'basic' => now()->addYear(),
-                'pro'   => now()->addYear(),
-                default => now()->addMonths(3),
-            };
+            $price     = (float) PlatformSetting::get('subscription_price', 0);
+            $trialDays = (int)   PlatformSetting::get('trial_days', 30);
 
             Subscription::create([
                 'restaurant_id' => $restaurant->id,
-                'plan'          => $validated['plan'],
-                'status'        => 'active',
-                'amount'        => match ($validated['plan']) { 'free' => 0, 'basic' => 15000, 'pro' => 35000 },
+                'plan'          => 'standard',
+                'status'        => 'trial',
+                'amount'        => $price,
                 'starts_at'     => now(),
-                'expires_at'    => $duration,
+                'expires_at'    => $trialDays > 0 ? now()->addDays($trialDays) : null,
             ]);
 
             // Create admin user
@@ -165,15 +184,16 @@ class PlatformController extends Controller
     public function updateSubscription(Request $request, Restaurant $restaurant): JsonResponse
     {
         $validated = $request->validate([
-            'plan'       => ['required', 'in:free,basic,pro'],
-            'expires_at' => ['nullable', 'date', 'after:today'],
+            'status'     => ['required', 'in:active,trial,expired,cancelled'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
-        $sub = $restaurant->subscription ?? new Subscription(['restaurant_id' => $restaurant->id]);
+        $price = (float) PlatformSetting::get('subscription_price', 0);
+        $sub   = $restaurant->subscription ?? new Subscription(['restaurant_id' => $restaurant->id]);
         $sub->fill([
-            'plan'       => $validated['plan'],
-            'status'     => 'active',
-            'amount'     => match ($validated['plan']) { 'free' => 0, 'basic' => 15000, 'pro' => 35000 },
+            'plan'       => 'standard',
+            'status'     => $validated['status'],
+            'amount'     => $price,
             'starts_at'  => $sub->starts_at ?? now(),
             'expires_at' => $validated['expires_at'] ?? null,
         ])->save();
@@ -190,6 +210,82 @@ class PlatformController extends Controller
         $restaurant->update(['is_active' => false]);
         $restaurant->delete();
 
+        return response()->json(null, 204);
+    }
+
+    /**
+     * GET /api/platform/settings
+     */
+    public function getSettings(): JsonResponse
+    {
+        return response()->json([
+            'subscription_price'    => (float)  PlatformSetting::get('subscription_price', 0),
+            'subscription_currency' => (string) PlatformSetting::get('subscription_currency', 'FCFA'),
+            'trial_days'            => (int)    PlatformSetting::get('trial_days', 30),
+            'platform_name'         => (string) PlatformSetting::get('platform_name', 'RestoQR'),
+        ]);
+    }
+
+    /**
+     * POST /api/platform/settings
+     */
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'subscription_price'    => ['required', 'numeric', 'min:0'],
+            'subscription_currency' => ['required', 'string', 'max:10'],
+            'trial_days'            => ['required', 'integer', 'min:0', 'max:365'],
+            'platform_name'         => ['required', 'string', 'max:100'],
+        ]);
+
+        foreach ($validated as $key => $value) {
+            PlatformSetting::set($key, $value);
+        }
+
+        return response()->json(['message' => 'Paramètres mis à jour.', ...$validated]);
+    }
+
+    // ── Platform viewers ───────────────────────────────────────────────────
+
+    public function listViewers(): JsonResponse
+    {
+        $viewers = User::where('role', 'platform_viewer')
+            ->whereNull('restaurant_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'created_at']);
+
+        return response()->json($viewers);
+    }
+
+    public function createViewer(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'     => ['required', 'string', 'max:100'],
+            'email'    => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $viewer = User::create([
+            'name'          => $validated['name'],
+            'email'         => $validated['email'],
+            'password'      => Hash::make($validated['password']),
+            'role'          => 'platform_viewer',
+            'restaurant_id' => null,
+            'is_active'     => true,
+        ]);
+
+        return response()->json([
+            'id'         => $viewer->id,
+            'name'       => $viewer->name,
+            'email'      => $viewer->email,
+            'created_at' => $viewer->created_at,
+        ], 201);
+    }
+
+    public function deleteViewer(int $id): JsonResponse
+    {
+        $viewer = User::where('role', 'platform_viewer')->findOrFail($id);
+        $viewer->delete();
         return response()->json(null, 204);
     }
 

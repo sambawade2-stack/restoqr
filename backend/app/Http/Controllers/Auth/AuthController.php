@@ -27,7 +27,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Compte désactivé.'], 403);
         }
 
-        $user->load('restaurant');
+        $user->load('restaurant.subscription');
         $token = $user->createToken('auth_token')->plainTextToken;
 
         ActivityLog::record('auth.login', $user->restaurant_id);
@@ -73,7 +73,7 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load('restaurant');
+        $user = $request->user()->load('restaurant.subscription');
 
         return response()->json([
             'id'            => $user->id,
@@ -87,16 +87,27 @@ class AuthController extends Controller
 
     private function formatRestaurant($restaurant): array
     {
+        $sub = $restaurant->subscription;
+
         return [
-            'id'       => $restaurant->id,
-            'name'     => $restaurant->name,
-            'slug'     => $restaurant->slug,
-            'email'    => $restaurant->email,
-            'phone'    => $restaurant->phone,
-            'address'  => $restaurant->address,
-            'currency' => $restaurant->currency,
-            'timezone' => $restaurant->timezone,
-            'logo'     => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+            'id'           => $restaurant->id,
+            'name'         => $restaurant->name,
+            'slug'         => $restaurant->slug,
+            'email'        => $restaurant->email,
+            'phone'        => $restaurant->phone,
+            'address'      => $restaurant->address,
+            'currency'     => $restaurant->currency,
+            'timezone'     => $restaurant->timezone,
+            'logo'         => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+            'order_qr_url' => $restaurant->order_qr_url,
+            'is_active'    => $restaurant->is_active,
+            'subscription' => $sub ? [
+                'status'     => $sub->status,
+                'plan'       => $sub->plan,
+                'is_active'  => $sub->isActive(),
+                'expires_at' => $sub->expires_at,
+                'days_left'  => $sub->daysUntilExpiry(),
+            ] : null,
         ];
     }
 }

@@ -2,7 +2,7 @@ import api from './axios'
 
 // Public
 export const getTableMenu    = (slug, tableId, token) =>
-  api.get(`/menu/${slug}/${tableId}`, { params: { token } })
+  api.get(`/menu/${slug}/${tableId}`, { headers: { 'X-QR-Token': token } })
 
 export const getDeliveryMenu = (slug) => api.get(`/menu/${slug}`)
 

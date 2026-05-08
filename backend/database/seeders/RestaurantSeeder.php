@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Restaurant;
+use App\Models\Subscription;
 use App\Models\Table;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -15,7 +16,16 @@ class RestaurantSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Demo Restaurant
+        // 1. Super Admin (propriétaire de la plateforme)
+        User::updateOrCreate(['email' => 'sambawade2@gmail.com'], [
+            'name'          => 'Samba Wade',
+            'password'      => Hash::make('Gm@2026'),
+            'role'          => 'super_admin',
+            'restaurant_id' => null,
+            'is_active'     => true,
+        ]);
+
+        // 2. Demo Restaurant
         $restaurant = Restaurant::updateOrCreate(['slug' => 'chez-mamie'], [
             'name'     => 'Chez Mamie',
             'email'    => 'contact@chezmamie.sn',
@@ -27,7 +37,19 @@ class RestaurantSeeder extends Seeder
             'settings' => ['shift_start_hour' => 3],
         ]);
 
-        // 2. Users
+        // 2b. Subscription démo — actif permanent (pas d'expiration)
+        Subscription::updateOrCreate(
+            ['restaurant_id' => $restaurant->id],
+            [
+                'plan'       => 'standard',
+                'status'     => 'active',
+                'amount'     => 0,
+                'starts_at'  => now(),
+                'expires_at' => null,
+            ]
+        );
+
+        // 3. Users
         User::updateOrCreate(['email' => 'admin@chezmamie.sn'], [
             'restaurant_id' => $restaurant->id,
             'name'          => 'Mamie Diallo',
@@ -125,9 +147,10 @@ class RestaurantSeeder extends Seeder
         $this->command->table(
             ['Role', 'Email', 'Password'],
             [
-                ['Admin',    'admin@chezmamie.sn',   'password'],
-                ['Caissier', 'caisse@chezmamie.sn',  'password'],
-                ['Cuisine',  'cuisine@chezmamie.sn', 'password'],
+                ['Super Admin', 'sambawade2@gmail.com',  'Gm@2026'],
+                ['Admin',      'admin@chezmamie.sn',   'password'],
+                ['Caissier',   'caisse@chezmamie.sn',  'password'],
+                ['Cuisine',    'cuisine@chezmamie.sn', 'password'],
             ]
         );
     }

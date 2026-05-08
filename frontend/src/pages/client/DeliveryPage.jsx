@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Truck, Store, Plus, Minus, ChevronRight, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getDeliveryMenu } from '../../api/menu'
@@ -14,14 +14,17 @@ const TABS = [
 ]
 
 export default function DeliveryPage() {
-  const { slug }   = useParams()
-  const navigate   = useNavigate()
+  const { slug }       = useParams()
+  const navigate       = useNavigate()
+  const [searchParams] = useSearchParams()
   const { items, addItem, updateQuantity, clearCart, getTotal, initCart, currency } = useCartStore()
 
-  const [menu, setMenu]         = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [activeTab, setActiveTab] = useState(0)          // categories
-  const [orderType, setOrderType] = useState('delivery') // delivery | takeaway
+  const [menu, setMenu]           = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [activeTab, setActiveTab] = useState(0)
+  const [orderType, setOrderType] = useState(
+    searchParams.get('type') === 'takeaway' ? 'takeaway' : 'delivery'
+  )
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     customer_name:    '',

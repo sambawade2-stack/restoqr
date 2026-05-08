@@ -26,13 +26,20 @@ class OrderController extends Controller
             ->with(['items.product', 'table', 'payment'])
             ->latest();
 
-        // Filters
+        // Filters — valider les valeurs pour ne pas accepter des strings arbitraires
+        $allowedStatuses = array_keys(Order::TRANSITIONS);
+        $allowedTypes    = ['dine_in', 'delivery', 'takeaway'];
+
         if ($status = $request->query('status')) {
-            $query->where('status', $status);
+            if (in_array($status, $allowedStatuses, true)) {
+                $query->where('status', $status);
+            }
         }
 
         if ($type = $request->query('type')) {
-            $query->where('type', $type);
+            if (in_array($type, $allowedTypes, true)) {
+                $query->where('type', $type);
+            }
         }
 
         if ($request->boolean('today')) {
@@ -64,11 +71,11 @@ class OrderController extends Controller
     {
         abort_if($order->restaurant_id !== $request->user()->restaurant_id, 403);
 
-        $request->validate([
-            'status' => ['required', 'string'],
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:' . implode(',', array_keys(Order::TRANSITIONS))],
         ]);
 
-        $order = $this->orderService->transitionStatus($order, $request->status);
+        $order = $this->orderService->transitionStatus($order, $validated['status']);
 
         return response()->json(new OrderResource($order));
     }
