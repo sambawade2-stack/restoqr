@@ -59,7 +59,7 @@ services:
       SESSION_DRIVER:           redis
       QUEUE_CONNECTION:         redis
       REDIS_HOST:               redis
-      REDIS_PASSWORD:           ${REDIS_PASSWORD:-null}
+      REDIS_PASSWORD:           null
       REDIS_PORT:               6379
       SANCTUM_STATEFUL_DOMAINS: ${DOMAIN}
       SESSION_DOMAIN:           ${DOMAIN}
@@ -123,7 +123,7 @@ services:
       SESSION_DRIVER:   redis
       QUEUE_CONNECTION: redis
       REDIS_HOST:       redis
-      REDIS_PASSWORD:   ${REDIS_PASSWORD:-null}
+      REDIS_PASSWORD:   null
       REDIS_PORT:       6379
       FILESYSTEM_DISK:  public
     depends_on:
