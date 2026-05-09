@@ -434,7 +434,7 @@ export default function PlatformDashboard() {
             <p className="text-xs text-gray-400 mt-1">Mettre 0 pour désactiver la période d'essai.</p>
           </div>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            Ces paramètres s'appliquent aux nouvelles inscriptions. Les abonnements existants ne sont pas affectés automatiquement.
+            La durée d'essai est appliquée à toutes les inscriptions en cours de trial. Le prix s'applique aux nouvelles inscriptions uniquement.
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setSettingsModal(false)}
