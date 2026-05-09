@@ -4,9 +4,9 @@ FROM php:8.4-fpm-alpine
 RUN apk add --no-cache \
     git curl zip unzip \
     libpng-dev libjpeg-turbo-dev freetype-dev \
-    libzip-dev oniguruma-dev \
+    libzip-dev oniguruma-dev icu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql mbstring zip gd exif pcntl bcmath opcache
+    && docker-php-ext-install pdo_mysql mbstring zip gd exif pcntl bcmath opcache intl
 
 # OPcache config
 COPY opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
