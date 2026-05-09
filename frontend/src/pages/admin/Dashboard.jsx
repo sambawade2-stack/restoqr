@@ -16,15 +16,22 @@ const QUICK_ACTIONS = [
   { label: 'Statistiques',       to: '/admin/stats',  color: 'bg-blue-500' },
 ]
 
+const CACHE_KEY = 'dashboard_stats_cache'
+
 export default function AdminDashboard() {
-  const navigate       = useNavigate()
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  // Affiche immédiatement les stats du cache local (évite le spinner au rechargement)
+  const [stats, setStats]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY)) } catch { return null }
+  })
+  const [loading, setLoading] = useState(!stats)
 
   const fetch = useCallback(async () => {
     try {
       const { data } = await getDashboardStats()
       setStats(data)
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
     } catch {}
     finally { setLoading(false) }
   }, [])

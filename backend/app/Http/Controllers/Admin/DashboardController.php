@@ -16,18 +16,18 @@ class DashboardController extends Controller
         $restaurantId = $request->user()->restaurant_id;
         $restaurant   = $request->user()->restaurant;
 
-        // ── Journée métier (ex: 08h → 03h lendemain) ─────────────────────
         [$dayStart, $dayEnd] = $restaurant->businessDayBounds();
 
-        // Cache 60s — les stats "actives" changent vite, inutile de dépasser 1min
-        // Clé stable (pas de timestamp) pour que invalidateCache() fonctionne avec Redis
+        // Cache un tableau PHP simple (pas un JsonResponse — Redis ne peut pas le sérialiser)
         $cacheKey = "stats:{$restaurantId}";
-        return Cache::remember($cacheKey, 60, function () use ($restaurantId, $restaurant, $dayStart, $dayEnd) {
+        $data = Cache::remember($cacheKey, 60, function () use ($restaurantId, $restaurant, $dayStart, $dayEnd) {
             return $this->buildStats($restaurantId, $restaurant, $dayStart, $dayEnd);
         });
+
+        return response()->json($data);
     }
 
-    private function buildStats(int $restaurantId, $restaurant, $dayStart, $dayEnd): JsonResponse
+    private function buildStats(int $restaurantId, $restaurant, $dayStart, $dayEnd): array
     {
 
         // ── Stats journée en cours ─────────────────────────────────────────
@@ -89,7 +89,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return response()->json([
+        return [
             'today' => [
                 'orders'     => (int)   ($today->total_orders ?? 0),
                 'revenue'    => (float) $todayRevenue,
@@ -103,7 +103,7 @@ class DashboardController extends Controller
             ],
             'weekly_sales' => $days,
             'top_products' => $topProducts,
-        ]);
+        ];
     }
 
     /** Invalide le cache stats dès qu'une commande change */
