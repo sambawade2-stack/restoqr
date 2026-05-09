@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-  withCredentials: true,
+  withCredentials: false,
 })
 
 // Attach Bearer token

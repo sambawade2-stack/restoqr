@@ -12,9 +12,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Sanctum stateful API
-        $middleware->statefulApi();
-
         // Global API middleware
         $middleware->throttleApi();
 

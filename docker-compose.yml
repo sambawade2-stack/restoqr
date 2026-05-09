@@ -61,8 +61,6 @@ services:
       REDIS_HOST:               redis
       REDIS_PASSWORD:           null
       REDIS_PORT:               6379
-      SANCTUM_STATEFUL_DOMAINS: ${DOMAIN}
-      SESSION_DOMAIN:           ${DOMAIN}
       FILESYSTEM_DISK:          public
       FRONTEND_URL:             https://${DOMAIN}
     volumes:
