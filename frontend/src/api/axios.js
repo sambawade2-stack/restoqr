@@ -46,10 +46,13 @@ api.interceptors.response.use(
           duration: 6000,
         })
       } else if (code === 'restaurant_suspended') {
-        toast.error('Votre restaurant est suspendu. Contactez le support.', {
+        // Déconnecter immédiatement et rediriger
+        localStorage.removeItem('token')
+        toast.error('Restaurant suspendu. Contactez le support.', {
           id: 'restaurant_suspended',
-          duration: 6000,
+          duration: 4000,
         })
+        setTimeout(() => { window.location.href = '/login' }, 1500)
       }
     }
 

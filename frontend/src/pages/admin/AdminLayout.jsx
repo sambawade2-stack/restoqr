@@ -10,7 +10,18 @@ import { logout } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
 import ChangePasswordModal from '../../components/common/ChangePasswordModal'
 
-function SubscriptionBanner({ subscription }) {
+function SubscriptionBanner({ subscription, restaurantActive }) {
+  // Restaurant suspendu par le super admin
+  if (!restaurantActive) {
+    return (
+      <div className="bg-red-700 text-white text-sm px-4 py-2.5 flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+        <span className="font-semibold">Compte suspendu.</span>
+        <span>Votre restaurant a été suspendu par l'administrateur. Contactez le support.</span>
+      </div>
+    )
+  }
+
   if (!subscription) return null
 
   const { status, is_active, days_left, expires_at } = subscription
@@ -59,7 +70,8 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const { user, clearAuth } = useAuthStore()
-  const subscription = user?.restaurant?.subscription ?? null
+  const subscription      = user?.restaurant?.subscription ?? null
+  const restaurantActive  = user?.restaurant?.is_active ?? true
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [pwdModal, setPwdModal]       = useState(false)
@@ -162,7 +174,7 @@ export default function AdminLayout() {
           <span className="font-bold text-gray-900">RestoQR</span>
         </div>
 
-        <SubscriptionBanner subscription={subscription} />
+        <SubscriptionBanner subscription={subscription} restaurantActive={restaurantActive} />
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />

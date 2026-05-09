@@ -28,6 +28,15 @@ class AuthController extends Controller
         }
 
         $user->load('restaurant.subscription');
+
+        // Bloquer la connexion si le restaurant est suspendu
+        if ($user->restaurant && !$user->restaurant->is_active) {
+            AuditLogger::logLogin($user, false);
+            return response()->json([
+                'message' => 'Ce restaurant a été suspendu. Contactez le support.',
+                'code'    => 'restaurant_suspended',
+            ], 403);
+        }
         $token = $user->createToken('auth_token')->plainTextToken;
 
         ActivityLog::record('auth.login', $user->restaurant_id);
