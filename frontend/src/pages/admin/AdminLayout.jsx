@@ -6,7 +6,8 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { logout, me } from '../../api/auth'
+import { logout } from '../../api/auth'
+import api from '../../api/axios'
 import { useAuthStore } from '../../store/authStore'
 import ChangePasswordModal from '../../components/common/ChangePasswordModal'
 
@@ -73,9 +74,12 @@ export default function AdminLayout() {
   const subscription      = user?.restaurant?.subscription ?? null
   const restaurantActive  = user?.restaurant?.is_active ?? true
 
-  // Rafraîchir les données utilisateur (subscription, days_left) à chaque montage
+  // Rafraîchir silencieusement les données utilisateur (subscription, days_left)
+  // _silent: true → évite la déconnexion automatique si la requête échoue
   useEffect(() => {
-    me().then(({ data }) => setUser(data.user)).catch(() => {})
+    api.get('/auth/me', { _silent: true })
+      .then(({ data }) => { if (data?.user) setUser(data.user) })
+      .catch(() => {})
   }, [])
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)

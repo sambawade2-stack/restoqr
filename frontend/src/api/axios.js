@@ -24,29 +24,30 @@ function fixStorageUrls(data) {
 }
 
 // Handle 401 (session expirée) et 403 SaaS (restaurant suspendu / abo expiré)
+// Les requêtes avec { _silent: true } ne déclenchent pas la déconnexion automatique
 api.interceptors.response.use(
   res => {
     if (res.data) res.data = fixStorageUrls(res.data)
     return res
   },
   err => {
-    const status = err.response?.status
-    const code   = err.response?.data?.code
+    const status  = err.response?.status
+    const code    = err.response?.data?.code
+    const silent  = err.config?._silent
 
-    if (status === 401) {
+    if (status === 401 && !silent) {
       localStorage.removeItem('token')
       window.location.href = '/login'
       return Promise.reject(err)
     }
 
-    if (status === 403) {
+    if (status === 403 && !silent) {
       if (code === 'subscription_expired') {
         toast.error('Abonnement expiré — contactez le support pour renouveler.', {
           id: 'subscription_expired',
           duration: 6000,
         })
       } else if (code === 'restaurant_suspended') {
-        // Déconnecter immédiatement et rediriger
         localStorage.removeItem('token')
         toast.error('Restaurant suspendu. Contactez le support.', {
           id: 'restaurant_suspended',
