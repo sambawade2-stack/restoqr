@@ -5,8 +5,7 @@ import compression from 'vite-plugin-compression'
 export default defineConfig({
   plugins: [
     react(),
-    // Génère des .gz pour tous les assets → nginx gzip_static les sert directement
-    compression({ algorithm: 'gzip', ext: '.gz', threshold: 1024 }),
+    compression({ algorithm: 'gzip', ext: '.gz', threshold: 1024, deleteOriginFile: false }),
   ],
 
   server: {
@@ -24,44 +23,40 @@ export default defineConfig({
   },
 
   build: {
-    // Minification agressive
     minify: 'esbuild',
     target: 'es2020',
-
-    // Réduire le CSS inline inutile
     cssCodeSplit: true,
+    reportCompressedSize: false,
+    assetsInlineLimit: 4096,
 
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendeurs stables → cachés longtemps par le navigateur
-          'vendor-react':  ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui':     ['clsx', 'lucide-react', 'react-hot-toast'],
-          'vendor-charts': ['apexcharts', 'react-apexcharts'],
-          'vendor-store':  ['zustand', 'axios'],
-          // Pages par rôle → chargées uniquement si nécessaire
-          'pages-client':  [
-            './src/pages/client/MenuPage',
-            './src/pages/client/DeliveryPage',
-            './src/pages/client/TrackOrder',
-          ],
-          'pages-kitchen': ['./src/pages/kitchen/KitchenDashboard'],
-          'pages-cashier': ['./src/pages/cashier/CashierDashboard'],
-          'pages-platform': ['./src/pages/platform/PlatformDashboard'],
-          'pages-admin':   [
-            './src/pages/admin/AdminLayout',
-            './src/pages/admin/Dashboard',
-            './src/pages/admin/MenuManagement',
-            './src/pages/admin/TableManagement',
-            './src/pages/admin/OrdersManagement',
-            './src/pages/admin/Statistics',
-            './src/pages/admin/StaffManagement',
-            './src/pages/admin/Settings',
-            './src/pages/admin/OrderHistory',
-          ],
+        manualChunks(id) {
+          // Libs React core → chunk stable, mis en cache longtemps
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'vendor-react'
+          }
+          // Charts → chunk séparé, chargé seulement si nécessaire
+          if (id.includes('apexcharts') || id.includes('react-apexcharts')) {
+            return 'vendor-charts'
+          }
+          // UI utilitaires légers
+          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/clsx') || id.includes('node_modules/react-hot-toast')) {
+            return 'vendor-ui'
+          }
+          // State + HTTP
+          if (id.includes('node_modules/zustand') || id.includes('node_modules/axios')) {
+            return 'vendor-store'
+          }
+          // Pages par rôle → téléchargées uniquement si l'utilisateur y accède
+          if (id.includes('/pages/kitchen')) return 'pages-kitchen'
+          if (id.includes('/pages/cashier')) return 'pages-cashier'
+          if (id.includes('/pages/platform')) return 'pages-platform'
+          if (id.includes('/pages/client')) return 'pages-client'
+          if (id.includes('/pages/admin')) return 'pages-admin'
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 600,
   },
 })

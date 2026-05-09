@@ -27,6 +27,9 @@ COPY . .
 # Install PHP dependencies (production)
 RUN composer install --optimize-autoloader --no-dev --no-interaction
 
+# PHP-FPM pool optimisé
+COPY fpm-pool.conf /usr/local/etc/php-fpm.d/zz-app.conf
+
 # Permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
