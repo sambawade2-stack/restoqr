@@ -238,8 +238,23 @@ class PlatformController extends Controller
             'platform_name'         => ['required', 'string', 'max:100'],
         ]);
 
+        $oldTrialDays = (int) PlatformSetting::get('trial_days', 30);
+        $newTrialDays = (int) $validated['trial_days'];
+
         foreach ($validated as $key => $value) {
             PlatformSetting::set($key, $value);
+        }
+
+        // Recalculer expires_at de tous les abonnements trial si la durée change
+        if ($newTrialDays !== $oldTrialDays) {
+            \App\Models\Subscription::where('status', 'trial')
+                ->whereNotNull('starts_at')
+                ->each(function ($sub) use ($newTrialDays) {
+                    $sub->expires_at = $newTrialDays > 0
+                        ? $sub->starts_at->copy()->addDays($newTrialDays)
+                        : null;
+                    $sub->save();
+                });
         }
 
         return response()->json(['message' => 'Paramètres mis à jour.', ...$validated]);
