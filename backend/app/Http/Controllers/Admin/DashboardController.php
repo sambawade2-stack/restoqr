@@ -63,13 +63,15 @@ class DashboardController extends Controller
             ->keyBy('date');
 
         // Zero-fill sur 7 jours
+        $frDays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
         $days = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date    = $dayStart->copy()->subDays($i)->toDateString();
+            $day     = $dayStart->copy()->subDays($i);
+            $date    = $day->toDateString();
             $dayData = $weeklySales->get($date);
             $days[]  = [
                 'date'    => $date,
-                'label'   => $dayStart->copy()->subDays($i)->locale('fr')->isoFormat('ddd'),
+                'label'   => $frDays[$day->dayOfWeek],
                 'revenue' => (float) ($dayData?->revenue ?? 0),
                 'orders'  => (int)   ($dayData?->orders  ?? 0),
             ];
