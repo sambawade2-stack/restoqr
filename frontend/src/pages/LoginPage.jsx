@@ -26,7 +26,13 @@ export default function LoginPage() {
       else if (role === 'cashier')  navigate('/cashier')
       else                          navigate('/admin')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Identifiants incorrects.')
+      const code = err.response?.data?.code
+      const msg  = err.response?.data?.message
+      if (code === 'restaurant_suspended') {
+        toast.error('Ce restaurant est suspendu. Contactez le support.', { duration: 5000 })
+      } else {
+        toast.error(msg || 'Identifiants incorrects.')
+      }
     } finally {
       setLoading(false)
     }

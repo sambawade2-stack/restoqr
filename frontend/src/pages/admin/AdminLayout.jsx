@@ -78,7 +78,7 @@ export default function AdminLayout() {
   // _silent: true → évite la déconnexion automatique si la requête échoue
   useEffect(() => {
     api.get('/auth/me', { _silent: true })
-      .then(({ data }) => { if (data?.user) setUser(data.user) })
+      .then(({ data }) => { if (data?.id) setUser(data) })
       .catch(() => {})
   }, [])
   const navigate = useNavigate()
