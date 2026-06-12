@@ -14,22 +14,11 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// Fix storage URLs: backend returns absolute URLs (APP_URL=http://localhost:8000)
-// but nginx serves /storage/ directly — make them relative so they work everywhere
-function fixStorageUrls(data) {
-  if (!data || typeof data !== 'object') return data
-  const str = JSON.stringify(data)
-  const fixed = str.replace(/"(https?:\/\/[^"]*\/storage\/)/g, '"/storage/')
-  return JSON.parse(fixed)
-}
-
 // Handle 401 (session expirée) et 403 SaaS (restaurant suspendu / abo expiré)
 // Les requêtes avec { _silent: true } ne déclenchent pas la déconnexion automatique
+// Note: les URLs /storage/ sont déjà renvoyées relatives par le backend (storage_url()).
 api.interceptors.response.use(
-  res => {
-    if (res.data) res.data = fixStorageUrls(res.data)
-    return res
-  },
+  res => res,
   err => {
     const status  = err.response?.status
     const code    = err.response?.data?.code

@@ -20,7 +20,7 @@ class OrderItemResource extends JsonResource
                 'id'    => $this->product->id,
                 'name'  => $this->product->name,
                 'image' => $this->product->image
-                    ? asset('storage/' . $this->product->image)
+                    ? storage_url($this->product->image)
                     : null,
             ]),
         ];

@@ -44,7 +44,7 @@ class MenuController extends Controller
                     'id'          => $cat->id,
                     'name'        => $cat->name,
                     'description' => $cat->description,
-                    'image'       => $cat->image ? asset('storage/' . $cat->image) : null,
+                    'image'       => $cat->image ? storage_url($cat->image) : null,
                     'products'    => ProductResource::collection($cat->products),
                 ]);
         });
@@ -52,7 +52,7 @@ class MenuController extends Controller
         return response()->json([
             'restaurant' => [
                 'name'     => $restaurant->name,
-                'logo'     => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+                'logo'     => $restaurant->logo ? storage_url($restaurant->logo) : null,
                 'currency' => $restaurant->currency,
             ],
             'table' => [
@@ -81,7 +81,7 @@ class MenuController extends Controller
                 ->map(fn (Category $cat) => [
                     'id'       => $cat->id,
                     'name'     => $cat->name,
-                    'image'    => $cat->image ? asset('storage/' . $cat->image) : null,
+                    'image'    => $cat->image ? storage_url($cat->image) : null,
                     'products' => ProductResource::collection($cat->products),
                 ]);
         });
@@ -89,7 +89,7 @@ class MenuController extends Controller
         return response()->json([
             'restaurant' => [
                 'name'     => $restaurant->name,
-                'logo'     => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+                'logo'     => $restaurant->logo ? storage_url($restaurant->logo) : null,
                 'currency' => $restaurant->currency,
             ],
             'categories' => $menu,

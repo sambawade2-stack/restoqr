@@ -38,7 +38,7 @@ class QRCodeService
             return null;
         }
 
-        return Storage::disk('public')->url($table->qr_code_path);
+        return storage_url($table->qr_code_path);
     }
 
     /**

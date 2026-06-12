@@ -107,7 +107,7 @@ class AuthController extends Controller
             'address'      => $restaurant->address,
             'currency'     => $restaurant->currency,
             'timezone'     => $restaurant->timezone,
-            'logo'         => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+            'logo'         => $restaurant->logo ? storage_url($restaurant->logo) : null,
             'order_qr_url' => $restaurant->order_qr_url,
             'is_active'    => $restaurant->is_active,
             'subscription' => $sub ? [

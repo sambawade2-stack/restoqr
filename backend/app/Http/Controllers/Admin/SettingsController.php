@@ -24,7 +24,7 @@ class SettingsController extends Controller
             'address'          => $restaurant->address,
             'currency'         => $restaurant->currency,
             'timezone'         => $restaurant->timezone,
-            'logo'             => $restaurant->logo ? asset('storage/' . $restaurant->logo) : null,
+            'logo'             => $restaurant->logo ? storage_url($restaurant->logo) : null,
             'shift_start_hour' => $restaurant->settings['shift_start_hour'] ?? 3,
         ]);
     }
@@ -77,7 +77,7 @@ class SettingsController extends Controller
                 'address'          => $restaurant->fresh()->address,
                 'currency'         => $restaurant->fresh()->currency,
                 'timezone'         => $restaurant->fresh()->timezone,
-                'logo'             => $restaurant->fresh()->logo ? asset('storage/' . $restaurant->fresh()->logo) : null,
+                'logo'             => $restaurant->fresh()->logo ? storage_url($restaurant->fresh()->logo) : null,
                 'shift_start_hour' => $restaurant->fresh()->settings['shift_start_hour'] ?? 3,
             ],
         ]);

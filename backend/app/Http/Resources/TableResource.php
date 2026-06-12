@@ -17,7 +17,7 @@ class TableResource extends JsonResource
             'status'       => $this->status,
             'qr_url'       => $this->qr_url,
             'qr_code_url'  => $this->qr_code_path
-                ? asset('storage/' . $this->qr_code_path)
+                ? storage_url($this->qr_code_path)
                 : null,
             'active_order' => $this->whenLoaded('activeOrder', fn () =>
                 $this->activeOrder
