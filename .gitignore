@@ -1,0 +1,25 @@
+# Environnement & secrets
+.env
+.env.*
+!.env.example
+
+# Dépendances
+node_modules/
+vendor/
+
+# Build
+dist/
+/public/build
+/public/hot
+
+# Logs & caches
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
